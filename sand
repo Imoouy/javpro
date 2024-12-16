@@ -1,0 +1,318 @@
+import java.util.ArrayList;
+import java.util.List;
+
+public class Sandwich {
+    private String bread;
+    private List<String> vegetables;
+    private String meat;
+    private double price;
+
+    // Prices for bread
+    public static final String[] BREAD_OPTIONS = {
+        "White Bread", "Wheat Bread", "French Bread", "Organic Bread"
+    };
+    public static final double[] BREAD_PRICES = {1.5, 1.6, 1.8, 2.0};
+
+    // Prices for vegetables
+    public static final String[] VEGETABLE_OPTIONS = {
+        "red onions", "olives", "pickles", "lettuce",
+        "green peppers", "tomatoes", "cheese"
+    };
+    public static final double[] VEGETABLE_PRICES = {0.05, 0.10, 0.10, 0.20, 0.25, 0.30, 0.50};
+
+    // Prices for meat
+    public static final String[] MEAT_OPTIONS = {
+        "Ham", "Roasted Chicken Breast", "Turkey Breast", "Roast Beef"
+    };
+    public static final double[] MEAT_PRICES = {1.0, 1.1, 1.2, 1.5};
+
+    public Sandwich(String bread, List<String> vegetables, String meat) {
+        this.bread = bread;
+        this.vegetables = vegetables;
+        this.meat = meat;
+        calculatePrice();
+    }
+
+    private void calculatePrice() {
+        // Calculate bread price
+        double total = 0.0;
+        for (int i = 0; i < BREAD_OPTIONS.length; i++) {
+            if (BREAD_OPTIONS[i].equals(this.bread)) {
+                total += BREAD_PRICES[i];
+                break;
+            }
+        }
+
+        // Calculate vegetables price
+        for (String veg : vegetables) {
+            for (int i = 0; i < VEGETABLE_OPTIONS.length; i++) {
+                if (VEGETABLE_OPTIONS[i].equals(veg)) {
+                    total += VEGETABLE_PRICES[i];
+                    break;
+                }
+            }
+        }
+
+        // Calculate meat price
+        for (int i = 0; i < MEAT_OPTIONS.length; i++) {
+            if (MEAT_OPTIONS[i].equals(this.meat)) {
+                total += MEAT_PRICES[i];
+                break;
+            }
+        }
+
+        this.price = total;
+    }
+
+    public String getBread() {
+        return bread;
+    }
+
+    public List<String> getVegetables() {
+        return vegetables;
+    }
+
+    public String getMeat() {
+        return meat;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+}
+
+
+
+
+
+
+///////////////////
+
+
+
+
+import java.text.DateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class Order {
+    private String customerName;
+    private Sandwich sandwich;
+    private String timestamp;
+
+    public Order(String customerName, Sandwich sandwich) {
+        this.customerName = customerName;
+        this.sandwich = sandwich;
+        this.timestamp = getCurrentTimestamp();
+    }
+
+    private String getCurrentTimestamp() {
+        Date now = new Date();
+        DateFormat defaultDate = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.MEDIUM);
+        return defaultDate.format(now);
+    }
+
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    public Sandwich getSandwich() {
+        return sandwich;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    @Override
+    public String toString() {
+        // For console display
+        String vegs = String.join(", ", sandwich.getVegetables());
+        return String.format("%s\t%s\t%s\t%s\t$%.2f",
+                timestamp,
+                customerName,
+                sandwich.getBread(),
+                vegs,
+                sandwich.getPrice(),
+                sandwich.getMeat());
+    }
+
+    public String toFileString() {
+        // For file writing in desired format
+        List<String> veggies = sandwich.getVegetables();
+        String vegs = String.join(", ", veggies);
+        return String.format("%s %s %s %s $%.2f",
+                getTimestamp(),
+                customerName,
+                sandwich.getBread(),
+                vegs,
+                sandwich.getPrice());
+    }
+}
+
+
+
+
+
+
+//////////////
+
+
+
+
+
+
+
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+
+public class SandwichIO {
+    private static final String FILE_NAME = "orderline.txt";
+
+    public static void writeOrderToFile(Order order) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_NAME, true))) {
+            bw.write(order.toFileString());
+            bw.newLine();
+        } catch (IOException e) {
+            System.out.println("Error writing to file: " + e.getMessage());
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+//////////////////////////////////
+
+
+
+
+
+
+
+import java.util.ArrayList;
+import java.util.InputMismatchException;
+import java.util.List;
+import java.util.Scanner;
+
+public class SandwichApp {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        boolean continueOrdering = true;
+
+        while (continueOrdering) {
+            // 1. Selecting bread
+            int breadChoice = -1;
+            while (true) {
+                System.out.println("=== Select Sandwich Bread: ===");
+                for (int i = 0; i < Sandwich.BREAD_OPTIONS.length; i++) {
+                    System.out.printf("%d %s $%.1f%n", i + 1, Sandwich.BREAD_OPTIONS[i], Sandwich.BREAD_PRICES[i]);
+                }
+                System.out.print("Select a bread [1, 4]: ");
+                breadChoice = getValidIntegerInput(scanner, 1, 4);
+                if (breadChoice != -1) {
+                    break;
+                }
+            }
+            String selectedBread = Sandwich.BREAD_OPTIONS[breadChoice - 1];
+
+            // 2. Selecting vegetables
+            List<String> selectedVegetables = new ArrayList<>();
+            while (true) {
+                System.out.println("=== Select Sandwich Vegetables: ===");
+                for (int i = 0; i < Sandwich.VEGETABLE_OPTIONS.length; i++) {
+                    System.out.printf("%d %s $%.2f%n", i + 1, Sandwich.VEGETABLE_OPTIONS[i], Sandwich.VEGETABLE_PRICES[i]);
+                }
+                System.out.printf("%d Quit vegetable selection%n", Sandwich.VEGETABLE_OPTIONS.length + 1);
+                System.out.printf("Select vegetables: [1, %d]: ", Sandwich.VEGETABLE_OPTIONS.length + 1);
+                int vegChoice = getValidIntegerInput(scanner, 1, Sandwich.VEGETABLE_OPTIONS.length + 1);
+                if (vegChoice == Sandwich.VEGETABLE_OPTIONS.length + 1) {
+                    break;
+                } else {
+                    String veg = Sandwich.VEGETABLE_OPTIONS[vegChoice - 1];
+                    selectedVegetables.add(veg);
+                }
+            }
+
+            // 3. Selecting meat
+            int meatChoice = -1;
+            while (true) {
+                System.out.println("=== Select Sandwich Meat: ===");
+                for (int i = 0; i < Sandwich.MEAT_OPTIONS.length; i++) {
+                    System.out.printf("%d %s $%.1f%n", i + 1, Sandwich.MEAT_OPTIONS[i], Sandwich.MEAT_PRICES[i]);
+                }
+                System.out.printf("%d Quit meat selection%n", Sandwich.MEAT_OPTIONS.length + 1);
+                System.out.printf("Select meat [1, %d]: ", Sandwich.MEAT_OPTIONS.length + 1);
+                meatChoice = getValidIntegerInput(scanner, 1, Sandwich.MEAT_OPTIONS.length + 1);
+                if (meatChoice != -1) {
+                    if (meatChoice == Sandwich.MEAT_OPTIONS.length + 1) {
+                        System.out.println("You must select a meat.");
+                    } else {
+                        break;
+                    }
+                }
+            }
+            String selectedMeat = Sandwich.MEAT_OPTIONS[meatChoice - 1];
+
+            // 4. Entering customer's name
+            System.out.print("Enter customer's name: ");
+            String customerName = scanner.nextLine().trim();
+            while (customerName.isEmpty()) {
+                System.out.print("Customer name cannot be empty. Enter customer's name: ");
+                customerName = scanner.nextLine().trim();
+            }
+
+            // Create Sandwich and Order objects
+            Sandwich sandwich = new Sandwich(selectedBread, selectedVegetables, selectedMeat);
+            Order order = new Order(customerName, sandwich);
+
+            // 5. Displaying and writing order line information
+            System.out.println(order.toFileString());
+            SandwichIO.writeOrderToFile(order);
+
+            // 6. Repeating the order process
+            System.out.print("Continue to order more sandwich? (y/n): ");
+            String response = scanner.nextLine().trim().toLowerCase();
+            while (!response.equals("y") && !response.equals("n")) {
+                System.out.print("Please enter 'y' or 'n': ");
+                response = scanner.nextLine().trim().toLowerCase();
+            }
+            if (response.equals("n")) {
+                continueOrdering = false;
+            }
+        }
+
+        System.out.println("Thank you for using the Sandwich Ordering System!");
+        scanner.close();
+    }
+
+    /**
+     * Helper method to get a valid integer input within a specified range.
+     * Returns -1 if invalid input is entered.
+     */
+    private static int getValidIntegerInput(Scanner scanner, int min, int max) {
+        int input = -1;
+        try {
+            String line = scanner.nextLine().trim();
+            input = Integer.parseInt(line);
+            if (input < min || input > max) {
+                System.out.printf("Error! Number must be between %d and %d.%n", min, max);
+                return -1;
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Error! Please enter a valid integer.");
+            return -1;
+        }
+        return input;
+    }
+}
+
